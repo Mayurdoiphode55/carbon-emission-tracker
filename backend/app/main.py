@@ -39,3 +39,7 @@ async def vehicle_count_by_type():
 async def occupancy_trend(hours: int = Query(24, ge=1, le=168), interval_minutes: int = Query(60, ge=1, le=1440)):
     data = await crud.occupancy_trends(hours=hours, interval_minutes=interval_minutes)
     return {"query": "occupancy_trend", "results": data}
+# ---- ML retraining and prediction routes (Phase 5) ----
+from app.routers import ml_routes
+app.include_router(ml_routes.router)
+

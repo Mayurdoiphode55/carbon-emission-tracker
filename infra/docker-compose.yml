@@ -1,0 +1,71 @@
+services:
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: carbon_user
+      POSTGRES_PASSWORD: carbon_pass
+      POSTGRES_DB: carbon_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build: ../backend
+    env_file: ../backend/.env
+    ports:
+      - "8080:8000"
+    depends_on:
+      - postgres
+      - mongo
+      - mlflow
+
+
+
+  ml_worker:
+    build: ../ml_worker
+    env_file: ../ml_worker/.env
+    ports:
+      - "9000:9000"
+    depends_on:
+      - mongo
+      - mlflow
+
+  mongo:
+    image: mongo:6
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.15.0
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlruns
+      --host 0.0.0.0
+      --port 5000
+      --serve-artifacts
+    volumes:
+      - ./mlruns:/mlruns
+
+
+
+
+
+    
+
+
+
+
+
+volumes:
+  mongo-data:
+  postgres-data:
+  mlflow-data:
