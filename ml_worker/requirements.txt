@@ -1,8 +1,13 @@
 fastapi
 uvicorn
-pandas
-scikit-learn
 requests
-joblib
+pandas
+numpy
+scikit-learn
 mlflow
-pymongo
+joblib
+pymongo        # if using Mongo
+sqlalchemy     # if using Postgres
+psycopg2-binary
+python-dotenv
+

@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:15
     restart: always
@@ -22,8 +21,6 @@ services:
       - mongo
       - mlflow
 
-
-
   ml_worker:
     build: ../ml_worker
     env_file: ../ml_worker/.env
@@ -42,30 +39,23 @@ services:
       - mongo-data:/data/db
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.15.0
+    image: ghcr.io/mlflow/mlflow:v2.17.1
+    restart: always
     ports:
       - "5000:5000"
     command: >
       mlflow server
-      --backend-store-uri sqlite:///mlflow.db
+      --backend-store-uri sqlite:////mlflow_data/mlflow.db
       --default-artifact-root /mlruns
       --host 0.0.0.0
       --port 5000
       --serve-artifacts
     volumes:
-      - ./mlruns:/mlruns
-
-
-
-
-
-    
-
-
-
-
+      - mlflow-data:/mlflow_data
+      - mlruns-data:/mlruns
 
 volumes:
   mongo-data:
   postgres-data:
   mlflow-data:
+  mlruns-data:

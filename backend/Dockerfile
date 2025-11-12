@@ -21,11 +21,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # install curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 # create non-root user
 RUN addgroup --system app && adduser --system --ingroup app app
-
 
 WORKDIR /app
 
@@ -36,6 +35,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # copy source
 COPY . /app
 
+# copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 RUN chown -R app:app /app
 USER app
 
@@ -44,4 +47,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD curl -f http://127.0.0.1:8000/health || exit 1
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "--bind", "0.0.0.0:8000", "--timeout", "120"]
