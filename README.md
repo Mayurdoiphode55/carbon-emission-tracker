@@ -44,7 +44,7 @@ This project addresses these gaps by providing:
 
 The system provides a comprehensive real-time dashboard with live metrics, trend analysis, and vehicle-specific breakdowns:
 
-![Carbon Emission Tracker Dashboard](C:/Users/mayur/.gemini/antigravity/brain/26d67275-03bf-4dc6-8f90-0d9b558763ea/dashboard_mockup_1770030898317.png)
+![Carbon Emission Tracker Dashboard](assets/dashboard_preview.png)
 
 ### Sample Predictions
 
