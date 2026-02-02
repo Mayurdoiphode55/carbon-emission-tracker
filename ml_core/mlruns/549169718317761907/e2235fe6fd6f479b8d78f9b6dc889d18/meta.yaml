@@ -1,0 +1,14 @@
+artifact_uri: /app/mlruns/549169718317761907/e2235fe6fd6f479b8d78f9b6dc889d18/artifacts
+end_time: 1770026247174
+entry_point_name: ''
+experiment_id: '549169718317761907'
+lifecycle_stage: active
+run_id: e2235fe6fd6f479b8d78f9b6dc889d18
+run_name: orderly-steed-281
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1770026224336
+status: 3
+tags: []
+user_id: root

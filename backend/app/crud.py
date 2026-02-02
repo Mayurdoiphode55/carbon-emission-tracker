@@ -41,3 +41,14 @@ async def occupancy_trends(hours=24, interval_minutes=60):
         {"$sort": {"timestamp": 1}}
     ]
     return [doc async for doc in db.traffic_events.aggregate(pipeline)]
+
+async def create_emission_record(data: dict):
+    """
+    Store emission prediction in MongoDB.
+    """
+    if "timestamp" in data and isinstance(data["timestamp"], str):
+        # Optional: Parse ISO string to datetime object if needed for Mongo
+        # data["timestamp"] = datetime.datetime.fromisoformat(data["timestamp"])
+        pass
+    await db.emission_logs.insert_one(data)
+

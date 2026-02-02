@@ -1,61 +1,114 @@
+
+
 services:
+  # --------------------- #
+  # Zookeeper & Kafka     #
+  # --------------------- #
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - carbon_net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - carbon_net
+
+  # --------------------- #
+  # Databases             #
+  # --------------------- #
   postgres:
     image: postgres:15
-    restart: always
+    container_name: postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: carbon_user
-      POSTGRES_PASSWORD: carbon_pass
-      POSTGRES_DB: carbon_db
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-carbon_db}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  backend:
-    build: ../backend
-    env_file: ../backend/.env
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "8080:8000"
+      - "5432:5432"
+    networks:
+      - carbon_net
+
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-admin}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - carbon_net
+
+  # --------------------- #
+  # Backend API           #
+  # --------------------- #
+  api:
+    container_name: carbon_api
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
     depends_on:
       - postgres
       - mongo
-      - mlflow
-
-  ml_worker:
-    build: ../ml_worker
-    env_file: ../ml_worker/.env
+      - kafka
+    env_file:
+      - ../.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     ports:
-      - "9000:9000"
+      - "8000:8000"
+    networks:
+      - carbon_net
+
+  # --------------------- #
+  # ML Service            #
+  # --------------------- #
+  ml_core:
+    container_name: ml_core
+    build:
+      context: ../ml_core
+      dockerfile: Dockerfile
+    restart: unless-stopped
     depends_on:
-      - mongo
-      - mlflow
-
-  mongo:
-    image: mongo:6
-    restart: always
-    ports:
-      - "27018:27017"
+      - api
+      - kafka
+    env_file:
+      - ../.env
     volumes:
-      - mongo-data:/data/db
-
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.17.1
-    restart: always
-    ports:
-      - "5000:5000"
-    command: >
-      mlflow server
-      --backend-store-uri sqlite:////mlflow_data/mlflow.db
-      --default-artifact-root /mlruns
-      --host 0.0.0.0
-      --port 5000
-      --serve-artifacts
-    volumes:
-      - mlflow-data:/mlflow_data
-      - mlruns-data:/mlruns
+      - ../ml_core:/app
+    networks:
+      - carbon_net
 
 volumes:
-  mongo-data:
-  postgres-data:
-  mlflow-data:
-  mlruns-data:
+  postgres_data:
+  mongo_data:
+
+networks:
+  carbon_net:
+    driver: bridge

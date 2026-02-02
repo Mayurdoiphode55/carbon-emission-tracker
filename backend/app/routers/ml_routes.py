@@ -1,52 +1,41 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-import requests
-import os
+from app.services.model_inference import model_service
 
 router = APIRouter(prefix="/ml", tags=["ML Operations"])
 
-# matches your docker-compose service and port
-ML_WORKER_URL = os.getenv("ML_WORKER_URL", "http://ml_worker:9000")
-
-
-# ---------- Request Models ----------
-class RetrainRequest(BaseModel):
-    model_type: str = "rf"   # or "lr"
-
 class PredictRequest(BaseModel):
-    features: dict           # example: {"temperature": 25, "distance": 5.3}
+    vehicle_count: int
+    avg_speed: float
+    humidity: float
+    temperature: float
+    weather: str
+    vehicle_type: str
 
-
-# ---------- Routes ----------
-@router.post("/retrain")
-def retrain(req: RetrainRequest):
+@router.get("/predict")
+def predict_get(
+    vehicle_count: int = 250,
+    speed: float = 30.0,
+    weather: str = "Clear"
+):
     """
-    Trigger model retraining via ML Worker.
+    GET endpoint as requested: /predict?vehicle_count=250&speed=30&weather=Clear
     """
-    try:
-        response = requests.post(
-            f"{ML_WORKER_URL}/train",
-            json=req.dict(),
-            timeout=180
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Retraining request failed: {str(e)}")
-
+    # Map query params to features
+    features = {
+        "vehicle_count": vehicle_count,
+        "avg_speed": speed,
+        "weather": weather,
+        "humidity": 50.0, # default
+        "temperature": 25.0, # default
+        "vehicle_type": "Car" # default
+    }
+    
+    pred = model_service.predict(features)
+    return {"predicted_co2_g_per_km": round(pred, 2)}
 
 @router.post("/predict")
-def predict(req: PredictRequest):
-    """
-    Forward prediction request to ML Worker.
-    """
-    try:
-        response = requests.post(
-            f"{ML_WORKER_URL}/predict",
-            json=req.dict(),
-            timeout=60
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Prediction request failed: {str(e)}")
+def predict_post(req: PredictRequest):
+    features = req.dict()
+    pred = model_service.predict(features)
+    return {"predicted_co2_g_per_km": round(pred, 2)}

@@ -1,18 +1,24 @@
-import "./globals.css";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import Navigation from "@/components/Navigation";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Carbon Emission Tracker",
-  description: "Dashboard to visualize emission analytics",
+  description: "Real-time AI-powered carbon emission monitoring",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-gray-50 text-gray-900">
-        {children}
+      <body className={inter.className}>
+        <Navigation />
+        <main className="ml-60">
+          {children}
+        </main>
       </body>
     </html>
   );
 }
-
